@@ -19,6 +19,6 @@ Master cfn script which runs nested scripts to do the following:
 
 ### How to use it
 
-1. Install aws cli and docker
+1. Install aws cli and docker and configure aws credentials or run on instance that has required permissions
 2. In the deploy.sh script at the top where it says 'set env variables (to change)' set these for your region, aws_account_id and s3_bucket_name (must be unique) which you wish to create to your account
 3. Run deploy.sh
