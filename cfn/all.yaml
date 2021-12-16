@@ -7,9 +7,7 @@ Description: >
   Deploys a highly available ECS cluster using an AutoScaling Group, with 
   ECS hosts distributed across 2 Availability Zones. 
 
-  Deploys an ECS service from container published in ECR
-
-  Deploy an RDS
+  Deploy a Multi-AZ RDS
 
 Parameters:
   S3BucketName:
@@ -31,16 +29,11 @@ Parameters:
     Description: password for db
     Type: String
     Default: changeme
-
-  Image:
-    Description: docker Image
-    Type: String
-    Default: blank
   
-  ContainerPort:
-    Description: port used by container
-    Type: Number
-    Default: 3000
+  DBName:
+    Description: db name
+    Type: String
+    Default: mydb
 
 Resources:
   VPC:
@@ -64,6 +57,18 @@ Resources:
         Subnets: !GetAtt VPC.Outputs.PublicSubnets # ALB accessible from internet
         SecurityGroup: !GetAtt SecurityGroups.Outputs.LoadBalancerSecurityGroup
 
+  RDS:
+    Type: AWS::CloudFormation::Stack
+    Properties:
+      TemplateURL: !Sub https://${S3BucketName}.s3.${Region}.amazonaws.com/rds.yaml
+      Parameters:
+        DBUsername: !Ref DbUser
+        DBPassword: !Ref DbPassword
+        DBName: !Ref DBName
+        PublicSubnet1: !GetAtt VPC.Outputs.PublicSubnet1
+        PublicSubnet2: !GetAtt VPC.Outputs.PublicSubnet2
+        SecurityGroup: !GetAtt SecurityGroups.Outputs.LoadBalancerSecurityGroup # so that we can query our database locally
+
   ECS:
     Type: AWS::CloudFormation::Stack
     Properties:
@@ -77,29 +82,21 @@ Resources:
         SecurityGroup: !GetAtt SecurityGroups.Outputs.ECSHostSecurityGroup
         Subnets: !GetAtt VPC.Outputs.PrivateSubnets # for security purposes keep in private subnets
 
-  Service:
-    Type: AWS::CloudFormation::Stack
-    Properties:
-      TemplateURL: !Sub https://${S3BucketName}.s3.${Region}.amazonaws.com/service.yaml
-      Parameters:
-        VPC: !GetAtt VPC.Outputs.VPC
-        Cluster: !GetAtt ECS.Outputs.Cluster
-        DesiredCount: 2
-        Listener: !GetAtt ALB.Outputs.Listener
-        Path: /
-        ECSServiceAutoScalingRoleARN: !GetAtt ECS.Outputs.ECSServiceAutoScalingRole
-        Image: !Ref Image
-        ContainerPort: !Ref ContainerPort
-
-  RDS:
-    Type: AWS::CloudFormation::Stack
-    Properties:
-      TemplateURL: !Sub https://${S3BucketName}.s3.${Region}.amazonaws.com/rds.yaml
-      Parameters:
-        DBUsername: !Ref DbUser
-        DBPassword: !Ref DbPassword
+  # Service:
+  #   Type: AWS::CloudFormation::Stack
+  #   Properties:
+  #     TemplateURL: !Sub https://${S3BucketName}.s3.${Region}.amazonaws.com/service.yaml
+  #     Parameters:
+  #       VPC: !GetAtt VPC.Outputs.VPC
+  #       Cluster: !GetAtt ECS.Outputs.Cluster
+  #       DesiredCount: 2
+  #       Listener: !GetAtt ALB.Outputs.Listener
+  #       Path: /
+  #       ECSServiceAutoScalingRoleARN: !GetAtt ECS.Outputs.ECSServiceAutoScalingRole
+  #       Image: !Ref Image
+  #       ContainerPort: !Ref ContainerPort
 
 Outputs:
   WebsiteServiceUrl:
     Description: The URL endpoint for the website service
-    Value: !Join ["", [!GetAtt ALB.Outputs.LoadBalancerUrl, "/"]]
+    Value: !Join ["", [!GetAtt ALB.Outputs.LoadBalancerUrl, "/"]] # used to access website

@@ -24,11 +24,6 @@ Parameters:
     Description: The Application Load Balancer listener to register with
     Type: String
 
-  Path:
-    Description: The path to register with the Application Load Balancer
-    Type: String
-    Default: /
-
   ECSServiceAutoScalingRoleARN:
     Description: The ECS service auto scaling role ARN
     Type: String
@@ -72,31 +67,6 @@ Resources:
           PortMappings:
             - ContainerPort: !Ref ContainerPort
 
-#   ServiceDBUpdate:
-#     Type: AWS::ECS::Service
-#     Properties:
-#       Cluster: !Ref Cluster
-#       #Role: !Ref ServiceRole
-#       DesiredCount: 1
-#       TaskDefinition: !Ref TaskDefinitionDB
-#       DeploymentConfiguration:
-#         MinimumHealthyPercent: 0
-
-#   TaskDefinitionDB:
-#     Type: AWS::ECS::TaskDefinition
-#     Properties:
-#       Family: update-db
-#       ContainerDefinitions:
-#         - Name: update-db
-#           Essential: true
-#           Image: !Ref Image
-#           Memory: 128
-#           Command:
-#             - "updatedb"
-#           PortMappings:
-#             - ContainerPort: !Ref ContainerPort
-
-
   TargetGroup:
     Type: AWS::ElasticLoadBalancingV2::TargetGroup
     Properties:
@@ -111,6 +81,7 @@ Resources:
       HealthCheckTimeoutSeconds: 5
       HealthyThresholdCount: 2
 
+  # Create new listener rule to forward to new target group
   ListenerRule:
     Type: AWS::ElasticLoadBalancingV2::ListenerRule
     Properties:

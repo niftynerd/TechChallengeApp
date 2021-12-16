@@ -1,5 +1,7 @@
+
 Description: >-
-  AWS CloudFormation Template for creating an Amazon RDS DB instance
+  Postgres rds for Servian app database
+  Is MultiAZ
 Parameters:
   DBInstanceID:
     Default: dbinstance
@@ -12,8 +14,8 @@ Parameters:
       Must begin with a letter and must not end with a hyphen or contain two
       consecutive hyphens.
   DBName:
-    Default: Servian
-    Description: Servian database
+    Default: mydb
+    Description: My database
     Type: String
     MinLength: '1'
     MaxLength: '64'
@@ -47,7 +49,27 @@ Parameters:
     MaxLength: '41'
     AllowedPattern: '[a-zA-Z0-9]*'
     ConstraintDescription: must contain only alphanumeric characters.
+  PublicSubnet1:
+    Description: Subnet for subnetgroup 1
+    Type: AWS::EC2::Subnet::Id
+  PublicSubnet2:
+    Description: Subnet for subnetgroup 2
+    Type: AWS::EC2::Subnet::Id
+  SecurityGroup:
+    Description: Security Group for the RDS
+    Type: AWS::EC2::SecurityGroup::Id
 Resources:
+  DBSubnetGroup: 
+    Properties: 
+        DBSubnetGroupDescription: description
+        SubnetIds: 
+        - !Ref PublicSubnet1
+        - !Ref PublicSubnet2
+        Tags: 
+        - 
+            Key: String
+            Value: String
+    Type: "AWS::RDS::DBSubnetGroup"
   MyDB:
     Type: 'AWS::RDS::DBInstance'
     Properties:
@@ -56,12 +78,18 @@ Resources:
       DBInstanceClass: !Ref DBInstanceClass
       AllocatedStorage: !Ref DBAllocatedStorage
       Engine: postgres
-      EngineVersion: 13.4
+      EngineVersion: 10.7
       MasterUsername: !Ref DBUsername
       MasterUserPassword: !Ref DBPassword
+      PubliclyAccessible: true # not typically good but just making it so for debugging and so that we can query locally
+      MultiAZ: true # for high availability (could also do multi region failover for more cost)
+      DBSubnetGroupName: !Ref DBSubnetGroup
+      VPCSecurityGroups: [!Ref SecurityGroup]
+
+      #MonitoringInterval: '60'
+      #MonitoringRoleArn: 'arn:aws:iam::123456789012:role/rds-monitoring-role'
 
 Outputs:
-    MyDB:
-        Description: database reference
-        Value: !Ref MyDB
-      
+  RDS:
+    Description: A reference to the rds
+    Value: !GetAtt MyDB.Endpoint.Address
