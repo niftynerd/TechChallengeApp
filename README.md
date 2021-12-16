@@ -2,7 +2,8 @@
 
 ## Overview
 
-My solution to the Tech Challenge app. It is invoked from deploy.sh and requires aws cli and docker installed
+My solution to the Tech Challenge app. It is invoked from deploy.sh and requires aws cli and docker installed on a linux commandline
+(tested in ubuntu)
 
 Master cfn script which runs nested scripts to do the following:
 
